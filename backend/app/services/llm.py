@@ -98,7 +98,7 @@ def generate_image_prompt(title: str, abstract: str, pdf_text_snippet: str) -> s
     sys = (
         "You are a prompt writer for an image generation model. "
         "Given a research paper's title, abstract, and a short excerpt, output exactly one short English sentence (under 25 words) "
-        "describing how to draw an academic poster-style image: modern, scientific, no text or text labels in the image. "
+        "describing how to draw an academic poster-style image: professional academic infographic with a rigorous logical flowchart, blending precise scientific schematics with witty, minimalist hand-drawn illustrations and clever visual metaphors, clean vector lines, high-contrast academic color palette, organized hierarchy, sophisticated yet playful aesthetic, 4k resolution."
         "Output only the prompt, nothing else."
     )
     return _call_llm(sys, user, max_tokens=120).strip() or "Academic poster style image for a research paper, modern layout, no text in image."
