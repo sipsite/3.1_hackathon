@@ -9,27 +9,11 @@ from app.services import pdf_extract
 router = APIRouter()
 
 
-@router.post("/admin/sync-papers")
-def sync_papers(category: str = "cs.LG", max_results: int = 10):
-    data = load()
-    existing_ids = {p["id"] for p in data["papers"]}
-    new_papers = arxiv_svc.fetch_recent(category=category, max_results=max_results)
-    added = 0
-    for p in new_papers:
-        if p["id"] not in existing_ids:
-            data["papers"].append(p)
-            existing_ids.add(p["id"])
-            added += 1
-    save(data)
-    return {"added": added, "total": len(data["papers"])}
-
-
-@router.post("/admin/generate-for-paper/{paper_id}")
-def generate_for_paper(paper_id: str):
-    data = load()
+def _generate_content_for_paper(data: dict, paper_id: str) -> None:
+    """Mutate data: generate brief, summary, poster, comments for one paper. Caller must save."""
     papers = {p["id"]: p for p in data["papers"]}
     if paper_id not in papers:
-        raise HTTPException(status_code=404, detail="Paper not found")
+        return
     paper = papers[paper_id]
     if paper_id not in data["paper_content"]:
         data["paper_content"][paper_id] = {}
@@ -58,5 +42,34 @@ def generate_for_paper(paper_id: str):
             c["paper_id"] = paper_id
             data["comments"].append(c)
 
+
+@router.post("/admin/sync-papers")
+def sync_papers(category: str = "cs.LG", max_results: int = 10, auto_generate: bool = False):
+    data = load()
+    existing_ids = {p["id"] for p in data["papers"]}
+    new_papers = arxiv_svc.fetch_recent(category=category, max_results=max_results)
+    added_ids = []
+    for p in new_papers:
+        if p["id"] not in existing_ids:
+            data["papers"].append(p)
+            existing_ids.add(p["id"])
+            added_ids.append(p["id"])
+    if auto_generate and added_ids:
+        for pid in added_ids:
+            _generate_content_for_paper(data, pid)
+    save(data)
+    return {
+        "added": len(added_ids),
+        "total": len(data["papers"]),
+        "generated": added_ids if auto_generate else [],
+    }
+
+
+@router.post("/admin/generate-for-paper/{paper_id}")
+def generate_for_paper(paper_id: str):
+    data = load()
+    if paper_id not in {p["id"] for p in data["papers"]}:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    _generate_content_for_paper(data, paper_id)
     save(data)
     return {"ok": True, "paper_id": paper_id}
