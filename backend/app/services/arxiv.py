@@ -3,8 +3,7 @@ import httpx
 import xml.etree.ElementTree as ET
 from typing import List, Dict, Any
 
-ARXIV_QUERY = "http://export.arxiv.org/api/query?"
-
+ARXIV_QUERY = "https://export.arxiv.org/api/query?"
 
 def fetch_recent(category: str = "cs.LG", max_results: int = 20) -> List[Dict[str, Any]]:
     url = f"{ARXIV_QUERY}search_query=cat:{category}&sortBy=submittedDate&max_results={max_results}"
