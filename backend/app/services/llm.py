@@ -24,7 +24,7 @@ def _gemini(system: str, user: str, key: str, max_tokens: int) -> str:
     try:
         import httpx
         r = httpx.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key}",
+            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={key}",
             json={
                 "contents": [{"parts": [{"text": f"{system}\n\n{user}"}]}],
                 "generationConfig": {"maxOutputTokens": max_tokens},
