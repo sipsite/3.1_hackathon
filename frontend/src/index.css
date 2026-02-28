@@ -1,0 +1,276 @@
+:root {
+  --red: #fe2c55;
+  --pink: #ff7a9e;
+  --bg: #f8f8f8;
+  --card-bg: #fff;
+  --text: #333;
+  --radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 12px;
+  padding-bottom: 80px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--red);
+  margin: 0;
+}
+
+.back {
+  color: var(--red);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+/* Feed: two-column flex */
+.feed {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.feed-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Card (Xiaohongshu style) */
+.paper-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+}
+
+.paper-card-cover {
+  width: 100%;
+  aspect-ratio: 3/4;
+  overflow: hidden;
+  background: #eee;
+}
+
+.paper-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.paper-card-brief {
+  margin: 10px 12px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.paper-card-meta {
+  padding: 8px 12px 12px;
+  font-size: 0.8rem;
+  color: #888;
+  display: flex;
+  gap: 12px;
+}
+
+/* Post detail */
+.post-article {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+  margin-top: 12px;
+}
+
+.post-cover {
+  width: 100%;
+  max-height: 400px;
+  overflow: hidden;
+  background: #eee;
+}
+
+.post-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.post-title {
+  margin: 16px 16px 8px;
+  font-size: 1.1rem;
+  line-height: 1.35;
+}
+
+.post-brief {
+  margin: 0 16px 12px;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.post-summary, .post-abstract, .post-comments {
+  margin: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.post-summary h3, .post-comments h3 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  color: var(--red);
+}
+
+.post-summary-text {
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  margin: 0;
+  font-family: inherit;
+}
+
+.post-abstract summary {
+  cursor: pointer;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.post-abstract p {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+/* Comments */
+.comment-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.comment-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.comment-persona {
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--pink);
+}
+
+.comment-text {
+  font-size: 0.9rem;
+}
+
+.comments-empty {
+  color: #999;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Chat float */
+.chat-float {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100;
+}
+
+.chat-toggle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: var(--red);
+  color: #fff;
+  font-size: 1.4rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(254, 44, 85, 0.4);
+}
+
+.chat-panel {
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  width: 320px;
+  max-height: 400px;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  min-height: 120px;
+  max-height: 280px;
+}
+
+.chat-placeholder {
+  color: #999;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.chat-msg {
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.chat-msg.user { color: #333; }
+.chat-msg.assistant { color: #555; }
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid #eee;
+}
+
+.chat-input-row input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 0.9rem;
+}
+
+.chat-input-row button {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 20px;
+  background: var(--red);
+  color: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
