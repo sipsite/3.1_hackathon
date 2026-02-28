@@ -1,5 +1,6 @@
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -21,6 +22,14 @@ app.include_router(admin.router, prefix="/api", tags=["admin"])
 # Serve frontend static files (after build: frontend/dist)
 frontend_dist = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
 if frontend_dist.exists():
+    index_path = frontend_dist / "index.html"
+
+    @app.get("/paper/{path:path}")
+    def serve_paper_page(path: str):
+        if index_path.exists():
+            return FileResponse(str(index_path))
+        raise HTTPException(status_code=404)
+
     app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
 
 
