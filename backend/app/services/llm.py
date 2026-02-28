@@ -89,9 +89,9 @@ def generate_summary(title: str, abstract: str) -> str:
         max_tokens=DEFAULT_MAX_TOKENS,
     )
 
-prompt_options = ["Keep the response relatively short (avoid long essays), Use a natural, casual, conversational tone — like chatting, not a formal essay, Add personal opinions and feelings, Allow slight logical jumps or associative thinking, Include small personal anecdotes or examples (can be fictional but plausible)", 
-"Keep the response relatively short (avoid long essays), Use a natural, casual, conversational tone — like chatting, not a formal essay, Use more colloquial and slightly imperfect phrasing, Occasionally use abbreviations (kinda, tbh, idk, etc.), Add some subjective judgments",
-"Keep the response relatively short (avoid long essays), Use a natural, casual, conversational tone — like chatting, not a formal essay, Use richer and more varied descriptive modifiers, Avoid overly rigid structure or textbook-style organization, Let it feel like a real person thinking out loud"
+prompt_options = ["use short sentences, Use a natural, casual, conversational tone — like chatting, not a formal essay, Add personal opinions and feelings, Allow slight logical jumps or associative thinking, Include small personal anecdotes or examples (can be fictional but plausible)", 
+"use short sentences, Use a natural, casual, conversational tone — like chatting, not a formal essay, Use more colloquial and slightly imperfect phrasing, Occasionally use abbreviations (kinda, tbh, idk, etc.), Add some subjective judgments",
+"use short sentences, Use a natural, casual, conversational tone — like chatting, not a formal essay, Use richer and more varied descriptive modifiers, Avoid overly rigid structure or textbook-style organization, Let it feel like a real person thinking out loud"
 ]
 
 def generate_comments(title: str, abstract: str, summary: str) -> list[dict]:
@@ -100,7 +100,7 @@ def generate_comments(title: str, abstract: str, summary: str) -> list[dict]:
     for persona in PERSONAS:
 
         reply = _call_llm(
-            persona["system_prompt"] + " Avoid being overly helpful or structured. Use a casual, conversational tone. Use lowercase where appropriate, occasional abbreviations (like tbh, ngl, idk), and keep the sentences varying in length. Don't use 'As an AI' or perfect transition words like 'Furthermore' or 'In conclusion'. Output only the comment, no label.",
+            persona["system_prompt"] + random.choice(prompt_options) + "Output only the comment, no label.",
             text,
             max_tokens=DEFAULT_MAX_TOKENS,
         )
