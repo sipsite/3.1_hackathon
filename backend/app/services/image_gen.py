@@ -32,7 +32,7 @@ def generate_poster_url(title: str, abstract: str) -> str | None:
 def _gemini_image(key: str, prompt: str) -> str | None:
     try:
         r = httpx.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key={key}",
+            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key={key}",
             json={
                 "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]},
