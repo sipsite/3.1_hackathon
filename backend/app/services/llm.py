@@ -94,7 +94,7 @@ def generate_comments(title: str, abstract: str, summary: str) -> list[dict]:
     text = f"Title: {title}\nSummary: {summary or abstract[:ABSTRACT_MAX_COMMENT]}"
     for persona in PERSONAS:
         reply = _call_llm(
-            persona["system_prompt"] + " Output only the comment, no label.",
+            persona["system_prompt"] + " Avoid being overly helpful or structured. Use a casual, conversational tone. Use lowercase where appropriate, occasional abbreviations (like tbh, ngl, idk), and keep the sentences varying in length. Don't use 'As an AI' or perfect transition words like 'Furthermore' or 'In conclusion'. Output only the comment, no label.",
             text,
             max_tokens=DEFAULT_MAX_TOKENS,
         )
