@@ -91,6 +91,19 @@ def generate_comments(title: str, abstract: str, summary: str) -> list[dict]:
     return comments
 
 
+def generate_image_prompt(title: str, abstract: str, pdf_text_snippet: str) -> str:
+    """Generate a single English prompt for an image model (academic poster, no text in image)."""
+    snippet = (pdf_text_snippet or "")[:3000].strip()
+    user = f"Title: {title}\nAbstract: {abstract[:1500]}\n\nExcerpt from paper (first pages):\n{snippet}"
+    sys = (
+        "You are a prompt writer for an image generation model. "
+        "Given a research paper's title, abstract, and a short excerpt, output exactly one short English sentence (under 25 words) "
+        "describing how to draw an academic poster-style image: modern, scientific, no text or text labels in the image. "
+        "Output only the prompt, nothing else."
+    )
+    return _call_llm(sys, user, max_tokens=120).strip() or "Academic poster style image for a research paper, modern layout, no text in image."
+
+
 def chat_for_paper(context: dict, messages: list[dict]) -> str:
     sys = (
         "You are a helpful assistant discussing a research paper. Answer in English only, briefly and accurately based on the given paper context."

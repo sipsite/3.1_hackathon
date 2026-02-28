@@ -33,6 +33,19 @@ def fetch_recent(category: str = "cs.LG", max_results: int = 20) -> List[Dict[st
     return papers
 
 
+def fetch_pdf_bytes(pdf_url: str) -> bytes | None:
+    """Fetch PDF for one paper by its pdf_url. Called only when generating poster (e.g. generate-for-paper). No disk write."""
+    if not pdf_url:
+        return None
+    try:
+        with httpx.Client(timeout=60.0, follow_redirects=True) as client:
+            resp = client.get(pdf_url)
+            resp.raise_for_status()
+            return resp.content
+    except Exception:
+        return None
+
+
 def _text(el, default: str) -> str:
     if el is None:
         return default
