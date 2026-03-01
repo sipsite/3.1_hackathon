@@ -23,7 +23,7 @@ export default function Home() {
   return (
     <div className="page home">
       <header className="header">
-        <h1 className="logo">Paper Feed</h1>
+        <h1 className="logo">PaperDaily</h1>
       </header>
       <main className="feed">
         <div className="feed-col">

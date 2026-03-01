@@ -26,7 +26,7 @@ export default function Post() {
     <div className="page post">
       <header className="header">
         <Link to="/" className="back">← Feed</Link>
-        <h1 className="logo">Paper Feed</h1>
+        <h1 className="logo">PaperDaily</h1>
       </header>
       <article className="post-article">
         <div className="post-cover">
