@@ -1,50 +1,43 @@
-# Paper Feed — Xiaohongshu-style research paper feed
+# PaperDaily
 
-English-only UI. Papers from arXiv, AI-generated poster/summary/comments and in-post chatbot. Data in `backend/data.json` (no external DB). No Docker, no Nginx: single uvicorn process serves frontend + API.
+A social media-style feed for research papers
 
----
+## A. Problem & Solution
 
-## Run on cloud server (EC2)
-
-Do **not** run install/build locally if you only deploy on the server. On the **cloud server**:
-
-1. **Clone and install**
-   ```bash
-   git clone <your-repo> && cd code
-   export GEMINI_API_KEY=your_key   # or OPENAI_API_KEY
-   cd backend && pip install -r requirements.txt
-   cd ../frontend && npm install && npm run build
-   ```
-
-2. **Start the app**
-   ```bash
-   cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000
-   ```
-   One process serves the site at `http://<server-ip>:8000` (frontend at `/`, API at `/api`). Use `export GEMINI_API_KEY=...` (or `OPENAI_API_KEY`) in the same shell or via systemd `Environment=`.
-
-3. **Seed data and generate content**
-   - Sync papers from arXiv: `POST /api/admin/sync-papers?category=cs.LG&max_results=10`
-   - Generate poster + brief + summary + comments for a paper: `POST /api/admin/generate-for-paper/{paper_id}`
-
-Example with curl (on the server or from your machine if port open):
-```bash
-curl -X POST "http://localhost:8000/api/admin/sync-papers?max_results=5"
-curl -X POST "http://localhost:8000/api/admin/generate-for-paper/2401.00001"
-```
+Research papers are information-dense and hard to scan. Abstract and PDFs alone don’t give a quick, intuitive sense of what a paper is about. This project offers a **more multimodal way to see papers**: a visual feed with AI-generated posters, short briefs, structured summaries, persona comments, and an in-article chatbot—so you can grasp and explore papers without reading the full text first.
 
 ---
 
-## Run locally (optional)
+## B. Functions
 
-- Terminal 1: `cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload --port 8000`
-- Terminal 2: `cd frontend && npm install && npm run dev`
-- Open http://localhost:5173 (Vite dev); or build frontend and open http://localhost:8000
-
-Set `GEMINI_API_KEY` or `OPENAI_API_KEY` in the environment for AI features.
+- **Feed** — Two-column, card-based feed of recent papers (title, poster, one-line brief, comment count).
+- **Paper detail** — Full post: poster, brief, bullet summary, full summary (from PDF), abstract, and comments.
+- **AI poster** — One image per paper, generated from title + abstract + full-text summary (academic infographic style, no text in image).
+- **Brief & summaries** — One-sentence brief for the feed; short bullet summary and an optional ~1000-word full summary produced by an LLM that reads the paper body.
+- **Persona comments** — Multiple AI-generated comments (reviewer, PhD student, engineer, skeptic, domain expert) for quick, varied perspectives.
+- **In-post chat** — Chatbot tied to the current paper; answers are grounded in the paper’s full summary (or abstract/summary if no full summary).
+- **arXiv sync** — Pull recent papers from arXiv by category (e.g. cs.LG); optionally auto-generate poster, brief, summary, and comments for new papers.
+- **Scheduled sync** — Optional in-process scheduler to run sync (e.g. every N minutes) with auto_generate, so the feed updates without manual triggers.
 
 ---
 
-## Project layout
+## C. Feature Highlights
 
-- `frontend/` — React (Vite), two-column feed, post detail, chat float. English only.
-- `backend/` — FastAPI, `data.json` store, arXiv fetch, LLM (brief/summary/comments/chat), image poster. Config via `app/config.py` (env only).
+- **Real-time Updates** — Built-in scheduled tasks (with configurable intervals) automatically pull new papers from arXiv and generate posters, summaries, and comments without manual intervention.
+- **Full-text Summarization** — A single LLM reads the PDF body (first several pages) to generate a ~1,000-word structured summary. Briefs, summaries, comments, and poster prompts are all derived from this to avoid redundant processing.
+- **Multimodal Presentation** — Each paper includes an AI-generated poster, text brief/summary, multi-persona comments, and an interactive chat for rapid, multi-angle understanding.
+- **Persona-based Comments** — Fixed personas (Reviewer, PhD student, Engineer, Skeptic, Domain Expert) generate short reviews to simulate a community discussion environment.
+- **Conversational Understanding** — Features an in-post chatbot grounded in the paper's specific context, supporting follow-up questions and clarifications.
+- **Lightweight Storage** — No independent database required; a single `data.json` file stores all paper metadata and generated content. Posters are saved as Data URLs or URLs for easy backup and migration.
+
+---
+
+## D. Core Technology
+
+- **Frontend** — React 18, Vite 5, React Router; features a single-page two-column feed, article detail pages, and a floating chat component.
+- **Backend** — FastAPI; a single uvicorn process serves both the REST API and the frontend static assets (mounted from `frontend/dist`).
+- **Data** — No external database; `backend/data.json` stores paper lists, summaries, and comments; all read/write operations are unified via `store.load/save`.
+- **Paper Source** — arXiv API (RSS/Atom) fetches latest papers; PDFs are pulled with `httpx` and text is extracted using `PyMuPDF`.
+- **LLM** — Supports Gemini and OpenAI; handles briefs, summaries, persona comments, poster prompts, and chat responses via a unified `llm` module.
+- **Image Generation** — Posters are generated using the Gemini Image API based on LLM-synthesized prompts.
+- **Scheduled Tasks** — APScheduler handles background sync and generation based on the `SYNC_INTERVAL_MINUTES` environment variable.
