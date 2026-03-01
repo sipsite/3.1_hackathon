@@ -75,8 +75,12 @@ def _generate_content_for_paper(data: dict, paper_id: str) -> None:
             data["comments"].append(c)
 
 
-@router.post("/admin/sync-papers")
-def sync_papers(category: str = "cs.LG", max_results: int = 10, auto_generate: bool = False):
+def run_sync_papers(
+    category: str = "cs.LG",
+    max_results: int = 10,
+    auto_generate: bool = False,
+) -> dict:
+    """Sync papers from arXiv and optionally generate content. Callable from HTTP or scheduler."""
     data = load()
     existing_ids = {p["id"] for p in data["papers"]}
     new_papers = arxiv_svc.fetch_recent(category=category, max_results=max_results)
@@ -95,6 +99,11 @@ def sync_papers(category: str = "cs.LG", max_results: int = 10, auto_generate: b
         "total": len(data["papers"]),
         "generated": added_ids if auto_generate else [],
     }
+
+
+@router.post("/admin/sync-papers")
+def sync_papers(category: str = "cs.LG", max_results: int = 10, auto_generate: bool = False):
+    return run_sync_papers(category=category, max_results=max_results, auto_generate=auto_generate)
 
 
 @router.post("/admin/generate-for-paper/{paper_id}")
