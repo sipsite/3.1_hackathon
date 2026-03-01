@@ -40,6 +40,12 @@ export default function Post() {
             <pre className="post-summary-text">{paper.summary}</pre>
           </div>
         )}
+        {paper.full_summary && (
+          <div className="post-summary post-full-summary">
+            <h3>Full summary</h3>
+            <div className="post-summary-text">{paper.full_summary}</div>
+          </div>
+        )}
         {paper.abstract && (
           <details className="post-abstract">
             <summary>Abstract</summary>

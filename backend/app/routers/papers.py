@@ -36,6 +36,7 @@ def get_paper(paper_id: str):
         **paper,
         "brief": content.get("brief", ""),
         "summary": content.get("summary", ""),
+        "full_summary": content.get("full_summary", ""),
         "poster_url": content.get("poster_url", ""),
         "comments": comments,
     }

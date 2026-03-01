@@ -4,6 +4,7 @@ import random
 
 # Token / length limits
 DEFAULT_MAX_TOKENS = 10_000       # brief, summary, per-comment
+FULL_SUMMARY_MAX_TOKENS = 4_000   # ~1000 words output
 IMAGE_PROMPT_MAX_TOKENS = 20_000
 CHAT_MAX_TOKENS = 200_000
 
@@ -12,6 +13,8 @@ ABSTRACT_SNIPPET_SHORT = 1_500    # brief + chat context
 ABSTRACT_MAX_SUMMARY = 20_000
 ABSTRACT_MAX_COMMENT = 800
 PDF_SNIPPET_MAX = 30_000          # pdf excerpt + abstract for image prompt
+FULL_SUMMARY_PDF_MAX_CHARS = 80_000   # max PDF text sent to LLM for full summary
+FULL_SUMMARY_CONTEXT_CHAT = 5_000     # full_summary truncation for chat context
 
 # Personas for generated comments (English, hardcoded)
 PERSONAS = [
@@ -74,29 +77,47 @@ def _openai(system: str, user: str, key: str, max_tokens: int) -> str:
         return f"(OpenAI error: {e})"
 
 
-def generate_brief(title: str, abstract: str) -> str:
+def generate_brief(title: str, abstract: str, full_summary: str | None = None) -> str:
+    body = (full_summary or abstract)[:ABSTRACT_SNIPPET_SHORT * 2] if full_summary else abstract[:ABSTRACT_SNIPPET_SHORT]
     return _call_llm(
         "You write one short sentence (under 15 words) summarizing a research paper for a feed. English only. No quotes.",
-        f"Title: {title}\nAbstract: {abstract[:ABSTRACT_SNIPPET_SHORT]}",
+        f"Title: {title}\nContent:\n{body}",
         max_tokens=DEFAULT_MAX_TOKENS,
     )
 
 
-def generate_summary(title: str, abstract: str) -> str:
+def generate_summary(title: str, abstract: str, full_summary: str | None = None) -> str:
+    body = full_summary[:ABSTRACT_MAX_SUMMARY] if full_summary else abstract[:ABSTRACT_MAX_SUMMARY]
     return _call_llm(
         "You write a short bullet-point summary (3-5 bullets, one line each, short sentences) of the paper. English only. Plain text.",
-        f"Title: {title}\nAbstract: {abstract[:ABSTRACT_MAX_SUMMARY]}",
+        f"Title: {title}\nContent:\n{body}",
         max_tokens=DEFAULT_MAX_TOKENS,
     )
+
+
+def generate_full_summary(title: str, abstract: str, pdf_text: str) -> str:
+    """One LLM reads paper body and produces a concise summary within 1000 words. English only."""
+    text = (pdf_text or "")[:FULL_SUMMARY_PDF_MAX_CHARS].strip()
+    if not text:
+        return ""
+    user = f"Title: {title}\nAbstract: {abstract[:10_000]}\n\nFull paper excerpt (first pages):\n{text}"
+    sys = (
+        "You are an expert at summarizing research papers. Based on the title, abstract, and the full paper excerpt above, "
+        "write a clear, structured summary in English. Include: problem, method, main results, and limitations if evident. "
+        "Keep it under 1000 words. Use paragraphs or short sections; avoid bullet lists. Output only the summary."
+    )
+    return _call_llm(sys, user, max_tokens=FULL_SUMMARY_MAX_TOKENS).strip()
+
 
 prompt_options = ["use short sentences, Use a natural, casual, conversational tone — like chatting, not a formal essay, Add personal opinions and feelings, Allow slight logical jumps or associative thinking, Include small personal anecdotes or examples (can be fictional but plausible)", 
 "use short sentences, Use a natural, casual, conversational tone — like chatting, not a formal essay, Use more colloquial and slightly imperfect phrasing, Occasionally use abbreviations (kinda, tbh, idk, etc.), Add some subjective judgments",
 "use short sentences, Use a natural, casual, conversational tone — like chatting, not a formal essay, Use richer and more varied descriptive modifiers, Avoid overly rigid structure or textbook-style organization, Let it feel like a real person thinking out loud"
 ]
 
-def generate_comments(title: str, abstract: str, summary: str) -> list[dict]:
+def generate_comments(title: str, abstract: str, summary: str, full_summary: str | None = None) -> list[dict]:
     comments = []
-    text = f"Title: {title}\nSummary: {summary or abstract[:ABSTRACT_MAX_COMMENT]}"
+    content = (full_summary or summary or abstract)[:ABSTRACT_MAX_SUMMARY] if full_summary else (summary or abstract[:ABSTRACT_MAX_COMMENT])
+    text = f"Title: {title}\nPaper summary/content:\n{content}"
     for persona in PERSONAS:
 
         reply = _call_llm(
@@ -108,10 +129,15 @@ def generate_comments(title: str, abstract: str, summary: str) -> list[dict]:
     return comments
 
 
-def generate_image_prompt(title: str, abstract: str, pdf_text_snippet: str) -> str:
-    """Generate a single English prompt for an image model (academic poster, no text in image)."""
-    snippet = (pdf_text_snippet or "")[:PDF_SNIPPET_MAX].strip()
-    user = f"Title: {title}\nAbstract: {abstract[:PDF_SNIPPET_MAX]}\n\nExcerpt from paper (first pages):\n{snippet}"
+def generate_image_prompt(title: str, abstract: str, pdf_text_snippet: str | None = None, full_summary: str | None = None) -> str:
+    """Generate a single English prompt for an image model (academic poster, no text in image). Prefers full_summary over raw PDF snippet."""
+    if full_summary:
+        snippet = full_summary[:PDF_SNIPPET_MAX].strip()
+        label = "Paper summary"
+    else:
+        snippet = (pdf_text_snippet or "")[:PDF_SNIPPET_MAX].strip()
+        label = "Excerpt from paper (first pages)"
+    user = f"Title: {title}\nAbstract: {abstract[:PDF_SNIPPET_MAX]}\n\n{label}:\n{snippet}"
     sys = (
         "You are a prompt writer for an image generation model. "
         "Given a research paper's title, abstract, and a short excerpt, output exactly one short English sentence (under 25 words) "
@@ -125,6 +151,11 @@ def chat_for_paper(context: dict, messages: list[dict]) -> str:
     sys = (
         "You are a helpful assistant discussing a research paper. Answer in English only, briefly and accurately based on the given paper context."
     )
-    ctx_text = f"Paper title: {context.get('title', '')}\nAbstract: {context.get('abstract', '')[:ABSTRACT_SNIPPET_SHORT]}\nSummary: {context.get('summary', '')}"
+    full_summary = context.get("full_summary", "")
+    if full_summary:
+        body = full_summary[:FULL_SUMMARY_CONTEXT_CHAT]
+        ctx_text = f"Paper title: {context.get('title', '')}\nPaper summary (use this as main context):\n{body}"
+    else:
+        ctx_text = f"Paper title: {context.get('title', '')}\nAbstract: {context.get('abstract', '')[:ABSTRACT_SNIPPET_SHORT]}\nSummary: {context.get('summary', '')}"
     user_msgs = "\n".join(f"{m['role']}: {m['content']}" for m in messages[-10:])
     return _call_llm(sys, f"Context:\n{ctx_text}\n\nConversation:\n{user_msgs}", max_tokens=CHAT_MAX_TOKENS)

@@ -27,6 +27,7 @@ def post_chat(paper_id: str, body: ChatRequest):
         "title": paper.get("title", ""),
         "abstract": paper.get("abstract", ""),
         "summary": content.get("summary", ""),
+        "full_summary": content.get("full_summary", ""),
     }
     reply = chat_for_paper(context, [{"role": m.role, "content": m.content} for m in body.messages])
     return {"reply": reply}

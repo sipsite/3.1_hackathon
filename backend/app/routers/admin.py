@@ -9,8 +9,12 @@ from app.services import pdf_extract
 router = APIRouter()
 
 
+# More pages for full-summary generation (one LLM reads this and writes ~1000-word summary)
+FULL_SUMMARY_PDF_PAGES = 20
+
+
 def _generate_content_for_paper(data: dict, paper_id: str) -> None:
-    """Mutate data: generate brief, summary, poster, comments for one paper. Caller must save."""
+    """Mutate data: generate full_summary first (from PDF), then brief, summary, poster, comments. Caller must save."""
     papers = {p["id"]: p for p in data["papers"]}
     if paper_id not in papers:
         return
@@ -19,24 +23,52 @@ def _generate_content_for_paper(data: dict, paper_id: str) -> None:
         data["paper_content"][paper_id] = {}
     content = data["paper_content"][paper_id]
 
-    if not content.get("brief"):
-        content["brief"] = llm.generate_brief(paper["title"], paper["abstract"])
-    if not content.get("summary"):
-        content["summary"] = llm.generate_summary(paper["title"], paper["abstract"])
-    if not content.get("poster_url"):
+    # One LLM reads full paper and produces full_summary; everyone else uses it
+    if not content.get("full_summary"):
         pdf_url = paper.get("pdf_url") or f"https://arxiv.org/pdf/{paper_id}.pdf"
         pdf_bytes = arxiv_svc.fetch_pdf_bytes(pdf_url)
         if pdf_bytes:
-            pdf_text = pdf_extract.extract_text(pdf_bytes)
-            prompt = llm.generate_image_prompt(paper["title"], paper["abstract"], pdf_text)
+            pdf_text = pdf_extract.extract_text(pdf_bytes, max_pages=FULL_SUMMARY_PDF_PAGES)
+            content["full_summary"] = llm.generate_full_summary(
+                paper["title"], paper["abstract"], pdf_text
+            ) or ""
+
+    full_summary = content.get("full_summary") or ""
+
+    if not content.get("brief"):
+        content["brief"] = llm.generate_brief(
+            paper["title"], paper["abstract"], full_summary or None
+        )
+    if not content.get("summary"):
+        content["summary"] = llm.generate_summary(
+            paper["title"], paper["abstract"], full_summary or None
+        )
+    if not content.get("poster_url"):
+        if full_summary:
+            prompt = llm.generate_image_prompt(
+                paper["title"], paper["abstract"], full_summary=full_summary
+            )
+        else:
+            pdf_url = paper.get("pdf_url") or f"https://arxiv.org/pdf/{paper_id}.pdf"
+            pdf_bytes = arxiv_svc.fetch_pdf_bytes(pdf_url)
+            pdf_text = pdf_extract.extract_text(pdf_bytes) if pdf_bytes else ""
+            prompt = llm.generate_image_prompt(
+                paper["title"], paper["abstract"], pdf_text_snippet=pdf_text
+            ) if pdf_text else None
+        if prompt:
             content["poster_url"] = image_gen.generate_poster_url_from_prompt(prompt) or ""
         else:
-            content["poster_url"] = image_gen.generate_poster_url(paper["title"], paper["abstract"]) or ""
+            content["poster_url"] = image_gen.generate_poster_url(
+                paper["title"], paper["abstract"]
+            ) or ""
 
     comments_for_paper = [c for c in data["comments"] if c.get("paper_id") == paper_id]
     if not comments_for_paper:
         new_comments = llm.generate_comments(
-            paper["title"], paper["abstract"], content.get("summary", "")
+            paper["title"],
+            paper["abstract"],
+            content.get("summary", ""),
+            full_summary or None,
         )
         for c in new_comments:
             c["paper_id"] = paper_id
